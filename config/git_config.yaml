@@ -1,0 +1,361 @@
+# Git Configuration for N8N Deployment Project
+# ============================================
+
+# Repository Configuration
+repository:
+  # Main repository settings
+  name: "n8n-deployment-project"
+  description: "Automated N8N deployment and management system"
+  
+  # Repository URLs (configure these for your setup)
+  remote_urls:
+    origin: ""  # Set to your main repository URL
+    backup: ""  # Optional backup repository URL
+    mirror: ""  # Optional mirror repository URL
+  
+  # Default branch settings
+  default_branch: "main"
+  development_branch: "develop"
+  
+  # Repository type
+  type: "git"  # Options: git, gitlab, github, bitbucket
+
+# User Configuration
+user:
+  # Git user information
+  name: "N8N Deployer"
+  email: "deployer@n8n-project.local"
+  
+  # Signing configuration
+  signing:
+    enabled: false
+    key_id: ""
+    program: "gpg"
+
+# Commit Configuration
+commits:
+  # Commit message templates
+  templates:
+    feature: "✨ feat: {message}"
+    fix: "🐛 fix: {message}"
+    docs: "📚 docs: {message}"
+    style: "💄 style: {message}"
+    refactor: "♻️ refactor: {message}"
+    test: "✅ test: {message}"
+    chore: "🔧 chore: {message}"
+    deploy: "🚀 deploy: {message}"
+    auto: "🤖 auto: {message} - {timestamp}"
+  
+  # Default commit message
+  default_template: "auto"
+  
+  # Commit hooks
+  hooks:
+    pre_commit:
+      enabled: true
+      checks:
+        - "lint"
+        - "format"
+        - "test"
+    
+    commit_msg:
+      enabled: true
+      format_check: true
+      max_length: 72
+    
+    pre_push:
+      enabled: true
+      checks:
+        - "build"
+        - "test"
+
+# Branch Configuration
+branches:
+  # Branch naming conventions
+  naming:
+    feature: "feature/{name}"
+    bugfix: "bugfix/{name}"
+    hotfix: "hotfix/{name}"
+    release: "release/{version}"
+  
+  # Branch protection
+  protection:
+    main:
+      require_pull_request: true
+      require_status_checks: true
+      require_up_to_date: true
+      dismiss_stale_reviews: true
+    
+    develop:
+      require_pull_request: false
+      require_status_checks: true
+  
+  # Auto-merge settings
+  auto_merge:
+    enabled: false
+    target_branch: "main"
+    source_patterns:
+      - "feature/*"
+      - "bugfix/*"
+
+# Workflow Configuration
+workflows:
+  # Git flow settings
+  git_flow:
+    enabled: false
+    feature_prefix: "feature/"
+    release_prefix: "release/"
+    hotfix_prefix: "hotfix/"
+    support_prefix: "support/"
+  
+  # GitHub flow settings
+  github_flow:
+    enabled: true
+    main_branch: "main"
+    feature_branches: true
+  
+  # Custom workflow
+  custom:
+    enabled: false
+    steps: []
+
+# Deployment Configuration
+deployment:
+  # Automatic deployment settings
+  auto_deploy:
+    enabled: true
+    branches:
+      - "main"
+      - "develop"
+    
+    # Deployment triggers
+    triggers:
+      push: true
+      pull_request: false
+      tag: true
+  
+  # Deployment environments
+  environments:
+    development:
+      branch: "develop"
+      auto_deploy: true
+      require_approval: false
+    
+    staging:
+      branch: "main"
+      auto_deploy: false
+      require_approval: true
+    
+    production:
+      branch: "main"
+      auto_deploy: false
+      require_approval: true
+      require_tag: true
+
+# Tag Configuration
+tags:
+  # Tagging strategy
+  strategy: "semantic"  # Options: semantic, date, custom
+  
+  # Semantic versioning
+  semantic:
+    prefix: "v"
+    format: "{major}.{minor}.{patch}"
+    auto_increment: "patch"
+  
+  # Date-based versioning
+  date:
+    format: "v{year}.{month}.{day}"
+    timezone: "UTC"
+  
+  # Auto-tagging
+  auto_tag:
+    enabled: false
+    on_release: true
+    on_deploy: false
+
+# Merge Configuration
+merging:
+  # Merge strategies
+  strategy: "merge"  # Options: merge, squash, rebase
+  
+  # Merge commit settings
+  merge_commit:
+    message_template: "Merge {source} into {target}"
+    include_description: true
+  
+  # Squash settings
+  squash:
+    message_template: "{title}\n\n{description}"
+    include_commits: false
+  
+  # Rebase settings
+  rebase:
+    interactive: false
+    preserve_merges: false
+
+# Synchronization Configuration
+sync:
+  # Remote synchronization
+  remotes:
+    fetch_interval: 300  # seconds
+    auto_fetch: true
+    prune_on_fetch: true
+  
+  # Conflict resolution
+  conflicts:
+    auto_resolve: false
+    strategy: "manual"  # Options: manual, ours, theirs
+    notify_on_conflict: true
+  
+  # Backup synchronization
+  backup:
+    enabled: true
+    interval: "daily"
+    retention_days: 30
+
+# Security Configuration
+security:
+  # Access control
+  access:
+    require_signed_commits: false
+    require_verified_email: false
+    block_force_push: true
+  
+  # Secrets management
+  secrets:
+    scan_commits: true
+    block_secrets: true
+    patterns:
+      - "password"
+      - "secret"
+      - "key"
+      - "token"
+      - "api_key"
+  
+  # Vulnerability scanning
+  vulnerability:
+    enabled: false
+    scan_dependencies: true
+    scan_code: false
+
+# Integration Configuration
+integrations:
+  # CI/CD integrations
+  ci_cd:
+    github_actions:
+      enabled: false
+      workflow_file: ".github/workflows/deploy.yml"
+    
+    gitlab_ci:
+      enabled: false
+      config_file: ".gitlab-ci.yml"
+    
+    jenkins:
+      enabled: false
+      job_name: "n8n-deployment"
+  
+  # Issue tracking
+  issues:
+    github:
+      enabled: false
+      auto_close_on_merge: true
+    
+    jira:
+      enabled: false
+      project_key: ""
+      auto_transition: false
+  
+  # Communication
+  communication:
+    slack:
+      enabled: false
+      webhook_url: ""
+      channel: "#deployments"
+    
+    discord:
+      enabled: false
+      webhook_url: ""
+
+# Monitoring Configuration
+monitoring:
+  # Repository monitoring
+  repository:
+    track_size: true
+    track_commits: true
+    track_contributors: true
+  
+  # Performance monitoring
+  performance:
+    track_clone_time: false
+    track_push_time: false
+    track_merge_time: false
+  
+  # Alerts
+  alerts:
+    large_files: true
+    large_commits: true
+    force_pushes: true
+    failed_merges: true
+
+# Backup Configuration
+backup:
+  # Repository backup
+  repository:
+    enabled: true
+    frequency: "daily"
+    retention_days: 90
+    include_lfs: true
+  
+  # Configuration backup
+  configuration:
+    enabled: true
+    frequency: "weekly"
+    retention_days: 30
+  
+  # Backup locations
+  locations:
+    local: "./backups/git"
+    remote: ""  # Optional remote backup location
+
+# Cleanup Configuration
+cleanup:
+  # Automatic cleanup
+  auto_cleanup:
+    enabled: true
+    frequency: "weekly"
+  
+  # Cleanup targets
+  targets:
+    merged_branches: true
+    stale_branches: true
+    old_tags: false
+    unreferenced_objects: true
+  
+  # Cleanup thresholds
+  thresholds:
+    branch_age_days: 30
+    tag_age_days: 365
+    object_age_days: 90
+
+# Advanced Configuration
+advanced:
+  # Git configuration
+  git_config:
+    core.autocrlf: "input"
+    core.safecrlf: "warn"
+    pull.rebase: "false"
+    init.defaultBranch: "main"
+  
+  # Performance tuning
+  performance:
+    pack.threads: 0
+    pack.windowMemory: "1g"
+    gc.auto: 6700
+    gc.autoPackLimit: 50
+  
+  # Experimental features
+  experimental:
+    partial_clone: false
+    sparse_checkout: false
+    multi_pack_index: false

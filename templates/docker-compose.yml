@@ -1,0 +1,304 @@
+# N8N Docker Compose Template
+# ===========================
+# 
+# This is a comprehensive Docker Compose template for N8N deployment
+# with support for multiple databases, SSL, and monitoring.
+
+version: '3.8'
+
+services:
+  # N8N Main Service
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    container_name: n8n
+    restart: unless-stopped
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+    environment:
+      # Basic Configuration
+      - GENERIC_TIMEZONE=${TIMEZONE:-UTC}
+      - TZ=${TIMEZONE:-UTC}
+      - WEBHOOK_URL=${WEBHOOK_URL:-http://localhost:5678}
+      - N8N_HOST=${N8N_HOST:-0.0.0.0}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=${N8N_PROTOCOL:-http}
+      - N8N_SECURE_COOKIE=${N8N_SECURE_COOKIE:-false}
+      
+      # Database Configuration (uncomment for PostgreSQL)
+      # - DB_TYPE=postgresdb
+      # - DB_POSTGRESDB_HOST=postgres
+      # - DB_POSTGRESDB_DATABASE=${POSTGRES_DB:-n8n}
+      # - DB_POSTGRESDB_USER=${POSTGRES_USER:-n8n}
+      # - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD:-n8n_password}
+      
+      # Database Configuration (uncomment for MySQL)
+      # - DB_TYPE=mysqldb
+      # - DB_MYSQLDB_HOST=mysql
+      # - DB_MYSQLDB_DATABASE=${MYSQL_DATABASE:-n8n}
+      # - DB_MYSQLDB_USER=${MYSQL_USER:-n8n}
+      # - DB_MYSQLDB_PASSWORD=${MYSQL_PASSWORD:-n8n_password}
+      
+      # SSL Configuration (uncomment for HTTPS)
+      # - N8N_PROTOCOL=https
+      # - N8N_SSL_KEY=/certs/key.pem
+      # - N8N_SSL_CERT=/certs/cert.pem
+      
+      # Performance Configuration
+      - EXECUTIONS_PROCESS=${EXECUTIONS_PROCESS:-main}
+      - EXECUTIONS_MODE=${EXECUTIONS_MODE:-regular}
+      - N8N_EXECUTION_TIMEOUT=${N8N_EXECUTION_TIMEOUT:-3600}
+      - N8N_MAX_EXECUTION_TIMEOUT=${N8N_MAX_EXECUTION_TIMEOUT:-3600}
+      
+      # Security Configuration
+      - N8N_BASIC_AUTH_ACTIVE=${N8N_BASIC_AUTH_ACTIVE:-false}
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER:-admin}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD:-admin}
+      
+      # Logging Configuration
+      - N8N_LOG_LEVEL=${N8N_LOG_LEVEL:-info}
+      - N8N_LOG_OUTPUT=${N8N_LOG_OUTPUT:-console}
+      
+      # Workflow Configuration
+      - WORKFLOWS_DEFAULT_NAME=${WORKFLOWS_DEFAULT_NAME:-My Workflow}
+      - N8N_DEFAULT_BINARY_DATA_MODE=${N8N_DEFAULT_BINARY_DATA_MODE:-default}
+      
+    volumes:
+      # N8N Data Volume
+      - n8n_data:/home/node/.n8n
+      
+      # Local Files Volume
+      - ./local-files:/files
+      
+      # SSL Certificates (uncomment for HTTPS)
+      # - ./certs:/certs:ro
+      
+      # Custom Nodes (uncomment if you have custom nodes)
+      # - ./custom-nodes:/home/node/.n8n/custom
+      
+    networks:
+      - n8n_network
+    
+    # Health Check
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5678/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    # Resource Limits
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+    
+    # Dependencies (uncomment based on database choice)
+    # depends_on:
+    #   - postgres
+    #   - mysql
+    #   - redis
+
+  # PostgreSQL Database (uncomment to use)
+  # postgres:
+  #   image: postgres:13
+  #   container_name: n8n_postgres
+  #   restart: unless-stopped
+  #   environment:
+  #     - POSTGRES_DB=${POSTGRES_DB:-n8n}
+  #     - POSTGRES_USER=${POSTGRES_USER:-n8n}
+  #     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-n8n_password}
+  #     - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #     - ./init-scripts:/docker-entrypoint-initdb.d:ro
+  #   networks:
+  #     - n8n_network
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-n8n} -d ${POSTGRES_DB:-n8n}"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 512M
+  #         cpus: '0.25'
+
+  # MySQL Database (uncomment to use)
+  # mysql:
+  #   image: mysql:8.0
+  #   container_name: n8n_mysql
+  #   restart: unless-stopped
+  #   environment:
+  #     - MYSQL_DATABASE=${MYSQL_DATABASE:-n8n}
+  #     - MYSQL_USER=${MYSQL_USER:-n8n}
+  #     - MYSQL_PASSWORD=${MYSQL_PASSWORD:-n8n_password}
+  #     - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_password}
+  #     - MYSQL_CHARSET=utf8mb4
+  #     - MYSQL_COLLATION=utf8mb4_unicode_ci
+  #   volumes:
+  #     - mysql_data:/var/lib/mysql
+  #     - ./mysql-init:/docker-entrypoint-initdb.d:ro
+  #   networks:
+  #     - n8n_network
+  #   healthcheck:
+  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root_password}"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 512M
+  #         cpus: '0.25'
+
+  # Redis Cache (uncomment for caching)
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: n8n_redis
+  #   restart: unless-stopped
+  #   command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_password}
+  #   volumes:
+  #     - redis_data:/data
+  #   networks:
+  #     - n8n_network
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 256M
+  #         cpus: '0.1'
+
+  # Nginx Reverse Proxy (uncomment for SSL termination)
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: n8n_nginx
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./certs:/etc/nginx/certs:ro
+  #     - ./nginx-logs:/var/log/nginx
+  #   networks:
+  #     - n8n_network
+  #   depends_on:
+  #     - n8n
+  #   healthcheck:
+  #     test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+
+  # Prometheus Monitoring (uncomment for metrics)
+  # prometheus:
+  #   image: prom/prometheus:latest
+  #   container_name: n8n_prometheus
+  #   restart: unless-stopped
+  #   ports:
+  #     - "9090:9090"
+  #   volumes:
+  #     - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+  #     - prometheus_data:/prometheus
+  #   networks:
+  #     - n8n_network
+  #   command:
+  #     - '--config.file=/etc/prometheus/prometheus.yml'
+  #     - '--storage.tsdb.path=/prometheus'
+  #     - '--web.console.libraries=/etc/prometheus/console_libraries'
+  #     - '--web.console.templates=/etc/prometheus/consoles'
+  #     - '--storage.tsdb.retention.time=200h'
+  #     - '--web.enable-lifecycle'
+
+  # Grafana Dashboard (uncomment for visualization)
+  # grafana:
+  #   image: grafana/grafana:latest
+  #   container_name: n8n_grafana
+  #   restart: unless-stopped
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
+  #     - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+  #   volumes:
+  #     - grafana_data:/var/lib/grafana
+  #     - ./grafana/provisioning:/etc/grafana/provisioning:ro
+  #   networks:
+  #     - n8n_network
+  #   depends_on:
+  #     - prometheus
+
+  # Backup Service (uncomment for automated backups)
+  # backup:
+  #   image: alpine:latest
+  #   container_name: n8n_backup
+  #   restart: unless-stopped
+  #   volumes:
+  #     - n8n_data:/data/n8n:ro
+  #     - postgres_data:/data/postgres:ro
+  #     - ./backups:/backups
+  #     - ./backup-scripts:/scripts:ro
+  #   networks:
+  #     - n8n_network
+  #   command: /scripts/backup.sh
+  #   environment:
+  #     - BACKUP_SCHEDULE=${BACKUP_SCHEDULE:-0 2 * * *}
+  #     - BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-30}
+
+# Volumes
+volumes:
+  # N8N Data Volume
+  n8n_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PWD}/n8n-data
+
+  # Database Volumes (uncomment based on choice)
+  # postgres_data:
+  #   driver: local
+  
+  # mysql_data:
+  #   driver: local
+  
+  # redis_data:
+  #   driver: local
+  
+  # Monitoring Volumes (uncomment if using)
+  # prometheus_data:
+  #   driver: local
+  
+  # grafana_data:
+  #   driver: local
+
+# Networks
+networks:
+  n8n_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# Secrets (uncomment for Docker Swarm)
+# secrets:
+#   postgres_password:
+#     file: ./secrets/postgres_password.txt
+#   n8n_encryption_key:
+#     file: ./secrets/n8n_encryption_key.txt
+
+# Configs (uncomment for Docker Swarm)
+# configs:
+#   nginx_config:
+#     file: ./nginx.conf
+#   prometheus_config:
+#     file: ./prometheus.yml
